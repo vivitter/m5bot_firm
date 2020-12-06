@@ -16,8 +16,7 @@ M5Bot Firmware
 1. Create wifi_setting.h with reference to wifi_setting.h.template
    1. copy wifi_setting.h.template wifi_setting.h
    2. edit wifi_setting.h
-2. Edit ROS_MASTER_URI in the sketch.
-3. Upload Sketch with Arduino IDE
+2. Upload Sketch with Arduino IDE
 
 ## Mac
 
