@@ -1,0 +1,8 @@
+#ifndef WIFI_SETTING_H
+#define WIFI_SETTING_H
+
+#define SSID "YOUR_SSID"
+#define PASSWORD "YOUR_PASSWORD"
+#define ROS_MASTER_ADDR 192, 168, 11, 2
+
+#endif // !WIFI_SETTING_H

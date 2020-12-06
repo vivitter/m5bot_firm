@@ -1,0 +1,13 @@
+version: '3'
+services:
+  master:
+    image: ros:melodic
+    command: roscore
+
+  bridge:
+    build: .
+    environment:
+      - "ROS_MASTER_URI=http://master:11311"
+    command: rosrun rosserial_python serial_node.py tcp
+    ports:
+      - "11411:11411"
