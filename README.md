@@ -4,6 +4,8 @@ M5Bot Firmware
 This is a ROS Node running on M5Go.
 You can control M5Bot via Wi-Fi.
 
+![M5Bot](https://user-images.githubusercontent.com/1230152/101273091-eb4a2a00-37d5-11eb-92f1-e643a18eb720.jpg)
+
 # Verified Environment
 
 * M5GO
