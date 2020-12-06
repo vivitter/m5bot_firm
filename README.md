@@ -1,13 +1,26 @@
 M5Bot Firmware
 ==============
 
+This is a ROS Node running on M5Go.
+You can control M5Bot via Wi-Fi.
+
 # Verified Environment
 
 * M5GO
 * macOS Catalina 10.15.7
-  * Please Install Following.
-    * Arduino IDE
-    * Docker
+  * Arduino IDE
+    * You need to install following libraries.
+      * m5stack
+      * rosserial
+  * Docker
+
+
+# ROS Topic
+
+* Subscribing Topics
+  * /cmd_vel
+* Publishing Topics
+  * /imu:
 
 # Installation
 
