@@ -8,7 +8,13 @@ You can control M5Bot via Wi-Fi.
 
 # Verified Environment
 
-* M5GO
+* Hardware
+  * M5Go
+  * M5Stack Modules
+    * [Servo Module Board 12 Channels](https://m5stack.com/collections/m5-module/products/servo-module)
+  * Rotation Servo Motor
+    * [GeeKservo BP3005-02 JM9G360](https://nettigo.eu/products/geekservo-lego-compatible-continuous-rotation-servo-360)
+  * Lego Block
 * macOS Catalina 10.15.7
   * Arduino IDE
     * You need to install following libraries.
