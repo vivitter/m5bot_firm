@@ -15,6 +15,7 @@ You can control M5Bot via Wi-Fi.
   * Rotation Servo Motor
     * [GeeKservo BP3005-02 JM9G360](https://nettigo.eu/products/geekservo-lego-compatible-continuous-rotation-servo-360)
   * Lego Block
+  * [Mecanum Wheel](https://www.switch-science.com/catalog/5939/)
 * macOS Catalina 10.15.7
   * Arduino IDE
     * You need to install following libraries.
