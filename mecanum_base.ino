@@ -32,6 +32,9 @@
 
 #define SPIN_PERIOD 100
 
+#define CMD_VEL_TOPIC "/m5bot/cmd_vel"
+#define IMU_TOPIC "/m5bot/imu"
+
 struct MOTOR_VEL {
     int16_t v0; // front_left
     int16_t v1; // front_right
@@ -45,15 +48,15 @@ struct MOTOR_VEL {
 // Node Handler
 ros::NodeHandle_<WiFiHardware> nh;
 // Create Subscriber & Subscribe Callback
-// Subscribing /cmd_vel
+// Subscribing CMD_VEL_TOPIC
 void messageCb(const geometry_msgs::Twist& twist) {
     setVelocity(twistToMotorVel(twist));
 }
-ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &messageCb);
+ros::Subscriber<geometry_msgs::Twist> sub(CMD_VEL_TOPIC, &messageCb);
 // Create Publisher
-// Publishing /imu
+// Publishing IMU_TOPIC
 sensor_msgs::Imu imu_msg;
-ros::Publisher pub("imu", &imu_msg);
+ros::Publisher pub(IMU_TOPIC, &imu_msg);
 
 /*
     Connect To WiFi AP
