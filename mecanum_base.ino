@@ -1,5 +1,5 @@
 /*
-    Description: Firmware for m5bot with mecanum wheel.
+    Description: Firmware for m5bot
 */
 #define M5STACK_MPU6886
 
@@ -17,18 +17,20 @@
 #define SERVO_ADDR 0x53
 
 // Size Parameters
-#define DISTANCE_LEFT_TO_RIGHT_WHEEL 0.105
-#define DISTANCE_FRONT_TO_REAR_WHEEL 0.095
+#define DISTANCE_LEFT_TO_RIGHT_WHEEL 0.105 // [m]
+#define DISTANCE_FRONT_TO_REAR_WHEEL 0.095 // [m]
 #define WHEEL_SEPARATION_WIDTH DISTANCE_LEFT_TO_RIGHT_WHEEL / 2
 #define WHEEL_SEPARATION_LENGTH DISTANCE_FRONT_TO_REAR_WHEEL / 2
-#define WHEEL_RADIUS 0.032
+#define WHEEL_RADIUS 0.032 // [m]
 
 // Servo Parameters
-#define MAX_ANGULAR_VEL 8.72665  // rad/sec
-#define MIN_PULSE 500            // usec
-#define MAX_PULSE 2500           // usec
+#define MAX_ANGULAR_VEL 8.72665  // [rad/sec]
+#define MIN_PULSE 500            // [us]
+#define MAX_PULSE 2500           // [us]
 #define NEUTRAL_POSITION_PULSE (MIN_PULSE + (MAX_PULSE - MIN_PULSE) / 2)
 #define PULSE_RANGE (MAX_PULSE - MIN_PULSE)
+
+#define SPIN_PERIOD 100
 
 struct MOTOR_VEL {
     int16_t v0; // front_left
@@ -42,12 +44,14 @@ struct MOTOR_VEL {
 */
 // Node Handler
 ros::NodeHandle_<WiFiHardware> nh;
-// Message Callba
+// Create Subscriber & Subscribe Callback
+// Subscribing /cmd_vel
 void messageCb(const geometry_msgs::Twist& twist) {
     setVelocity(twistToMotorVel(twist));
 }
 ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &messageCb);
-
+// Create Publisher
+// Publishing /imu
 sensor_msgs::Imu imu_msg;
 ros::Publisher pub("imu", &imu_msg);
 
@@ -55,10 +59,12 @@ ros::Publisher pub("imu", &imu_msg);
     Connect To WiFi AP
 */
 void setupWiFi() {
+    // Establish WiFi Connection
     WiFi.begin(SSID, PASSWORD);
     while (WiFi.status() != WL_CONNECTED) {
         delay(100);
     }
+    // Show connection info on the screen
     M5.Lcd.setTextSize(2);
     M5.Lcd.setCursor(0, 0);
     M5.Lcd.println("WiFi connected!");
@@ -87,7 +93,9 @@ void setup() {
     // put your setup code here, to run once:
 }
 
-// addr 0x01 mean control the number 1 servo by us
+/*
+    Write us value to Servo Motor
+*/
 void Servo_write_us(uint8_t number, uint16_t us) {
     Wire.beginTransmission(SERVO_ADDR);
     Wire.write(0x00 | number);
@@ -96,16 +104,8 @@ void Servo_write_us(uint8_t number, uint16_t us) {
     Wire.endTransmission();
 }
 
-// addr 0x11 mean control the number 1 servo by angle
-void Servo_write_angle(uint8_t number, uint8_t angle) {
-    Wire.beginTransmission(SERVO_ADDR);
-    Wire.write(0x10 | number);
-    Wire.write(angle);
-    Wire.endTransmission();
-}
-
 /*
-    Check MOTOR_VEL Value
+    Check MOTOR_VEL Value & Clip value to the MAX&MIN range
 */
 void checkLimit(struct MOTOR_VEL *command) {
     if (command->v0 > MAX_PULSE) command->v0 = MAX_PULSE;
@@ -123,6 +123,7 @@ void checkLimit(struct MOTOR_VEL *command) {
 */
 MOTOR_VEL twistToMotorVel(geometry_msgs::Twist twist) {
     MOTOR_VEL command;
+    // Calculate Motor Velocity with Inverse Kinematics
     command.v0 = convertToUS((1/WHEEL_RADIUS) * (twist.linear.x - twist.linear.y - (WHEEL_SEPARATION_WIDTH + WHEEL_SEPARATION_LENGTH) * twist.angular.z));
     command.v1 = convertToUS((1/WHEEL_RADIUS) * (twist.linear.x + twist.linear.y + (WHEEL_SEPARATION_WIDTH + WHEEL_SEPARATION_LENGTH) * twist.angular.z) * (-1));
     command.v2 = convertToUS((1/WHEEL_RADIUS) * (twist.linear.x + twist.linear.y - (WHEEL_SEPARATION_WIDTH + WHEEL_SEPARATION_LENGTH) * twist.angular.z));
@@ -150,7 +151,11 @@ void setVelocity(MOTOR_VEL command) {
     Servo_write_us(3, command.v3);
 }
 
+/*
+    Get IMU Data from M5Go
+*/
 sensor_msgs::Imu getImu() {
+    // Get IMU Data
     sensor_msgs::Imu imu;
     float accX = 0.0F;
     float accY = 0.0F;
@@ -175,6 +180,7 @@ sensor_msgs::Imu getImu() {
     imu.orientation.z = yaw;
     imu.orientation.w = 1;
 
+    // Show on the screen
     M5.Lcd.setCursor(0, 65);
     M5.Lcd.printf("%6.2f  %6.2f  %6.2f      ", gyroX, gyroY, gyroZ);
     M5.Lcd.setCursor(220, 87);
@@ -191,12 +197,6 @@ sensor_msgs::Imu getImu() {
     return imu;
 }
 
-void setTwist(geometry_msgs::Twist* twist, float x, float y, float z){
-    twist->linear.x = x;
-    twist->linear.y = y;
-    twist->angular.z = z;
-}
-
 /*
     Main Loop
 */
@@ -204,5 +204,5 @@ void loop() {
     imu_msg = getImu();
     pub.publish(&imu_msg);
     nh.spinOnce();
-    delay(100);
+    delay(SPIN_PERIOD);
 }
