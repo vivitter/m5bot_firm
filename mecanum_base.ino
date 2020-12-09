@@ -24,22 +24,26 @@
 #define WHEEL_RADIUS 0.032 // [m]
 
 // Servo Parameters
-#define MAX_ANGULAR_VEL 8.72665  // [rad/sec]
-#define MIN_PULSE 500            // [us]
-#define MAX_PULSE 2500           // [us]
+#define MAX_ANGULAR_VEL 4.71239  // [rad/sec]
+#define MIN_ANGULAR_VEL (-1) * MAX_ANGULAR_VEL
+#define MIN_PULSE 600            // [us]
+#define MAX_PULSE 2400           // [us]
 #define NEUTRAL_POSITION_PULSE (MIN_PULSE + (MAX_PULSE - MIN_PULSE) / 2)
 #define PULSE_RANGE (MAX_PULSE - MIN_PULSE)
 
-#define SPIN_PERIOD 100
+#define SPIN_PERIOD 50 // [ms]
 
-#define CMD_VEL_TOPIC "/m5bot/cmd_vel"
-#define IMU_TOPIC "/m5bot/imu"
+#define CMD_VEL_TOPIC   "/m5bot/cmd_vel"
+#define IMU_TOPIC       "/m5bot/imu"
 
 struct MOTOR_VEL {
-    int16_t v0; // front_left
-    int16_t v1; // front_right
-    int16_t v2; // rear_left
-    int16_t v3; // rear_right
+    float omega[4]; // [rad/sec]
+    /*
+        omega[0]: front_left
+        omega[1]: front_right
+        omega[2]: rear_left
+        omega[3]: rear_right
+    */
 };
 
 /*
@@ -111,14 +115,10 @@ void Servo_write_us(uint8_t number, uint16_t us) {
     Check MOTOR_VEL Value & Clip value to the MAX&MIN range
 */
 void checkLimit(struct MOTOR_VEL *command) {
-    if (command->v0 > MAX_PULSE) command->v0 = MAX_PULSE;
-    if (command->v0 < MIN_PULSE) command->v0 = MIN_PULSE;
-    if (command->v1 > MAX_PULSE) command->v1 = MAX_PULSE;
-    if (command->v1 < MIN_PULSE) command->v1 = MIN_PULSE;
-    if (command->v2 > MAX_PULSE) command->v2 = MAX_PULSE;
-    if (command->v2 < MIN_PULSE) command->v2 = MIN_PULSE;
-    if (command->v3 > MAX_PULSE) command->v3 = MAX_PULSE;
-    if (command->v3 < MIN_PULSE) command->v3 = MIN_PULSE;
+    for(int i=0; i<4; i++) {
+        if (command->omega[i] > MAX_ANGULAR_VEL)        command->omega[i] = MAX_ANGULAR_VEL;
+        else if (command->omega[i] < MIN_ANGULAR_VEL)   command->omega[i] = MIN_ANGULAR_VEL;
+    }
 }
 
 /*
@@ -127,10 +127,10 @@ void checkLimit(struct MOTOR_VEL *command) {
 MOTOR_VEL twistToMotorVel(geometry_msgs::Twist twist) {
     MOTOR_VEL command;
     // Calculate Motor Velocity with Inverse Kinematics
-    command.v0 = convertToUS((1/WHEEL_RADIUS) * (twist.linear.x - twist.linear.y - (WHEEL_SEPARATION_WIDTH + WHEEL_SEPARATION_LENGTH) * twist.angular.z));
-    command.v1 = convertToUS((1/WHEEL_RADIUS) * (twist.linear.x + twist.linear.y + (WHEEL_SEPARATION_WIDTH + WHEEL_SEPARATION_LENGTH) * twist.angular.z) * (-1));
-    command.v2 = convertToUS((1/WHEEL_RADIUS) * (twist.linear.x + twist.linear.y - (WHEEL_SEPARATION_WIDTH + WHEEL_SEPARATION_LENGTH) * twist.angular.z));
-    command.v3 = convertToUS((1/WHEEL_RADIUS) * (twist.linear.x - twist.linear.y + (WHEEL_SEPARATION_WIDTH + WHEEL_SEPARATION_LENGTH) * twist.angular.z) * (-1));
+    command.omega[0] = (1/WHEEL_RADIUS) * (twist.linear.x - twist.linear.y - (WHEEL_SEPARATION_WIDTH + WHEEL_SEPARATION_LENGTH) * twist.angular.z);
+    command.omega[1] = (1/WHEEL_RADIUS) * (twist.linear.x + twist.linear.y + (WHEEL_SEPARATION_WIDTH + WHEEL_SEPARATION_LENGTH) * twist.angular.z) * (-1);
+    command.omega[2] = (1/WHEEL_RADIUS) * (twist.linear.x + twist.linear.y - (WHEEL_SEPARATION_WIDTH + WHEEL_SEPARATION_LENGTH) * twist.angular.z);
+    command.omega[3] = (1/WHEEL_RADIUS) * (twist.linear.x - twist.linear.y + (WHEEL_SEPARATION_WIDTH + WHEEL_SEPARATION_LENGTH) * twist.angular.z) * (-1);
 
     checkLimit(&command);
     return command;
@@ -140,7 +140,7 @@ MOTOR_VEL twistToMotorVel(geometry_msgs::Twist twist) {
     Convert rad/sec to pulse value
 */
 int16_t convertToUS(float ref_angular_vel) {
-    int16_t us = (int16_t)(PULSE_RANGE/2/MAX_ANGULAR_VEL*ref_angular_vel + NEUTRAL_POSITION_PULSE);
+    int16_t us = (int16_t)(PULSE_RANGE/2*ref_angular_vel/MAX_ANGULAR_VEL + NEUTRAL_POSITION_PULSE);
     return us;
 }
 
@@ -148,10 +148,7 @@ int16_t convertToUS(float ref_angular_vel) {
     Set Velocity
 */
 void setVelocity(MOTOR_VEL command) {
-    Servo_write_us(0, command.v0);
-    Servo_write_us(1, command.v1);
-    Servo_write_us(2, command.v2);
-    Servo_write_us(3, command.v3);
+    for (int i = 0; i < 4; i++) Servo_write_us(i, convertToUS(command.omega[i]));
 }
 
 /*
